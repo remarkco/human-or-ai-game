@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d17">
+<title>Human or AI? — Can you tell the difference?</title>
+<style>
+  :root{
+    --bg:#0b0d17; --bg2:#121527; --card:#181c33; --card2:#1f2440;
+    --line:#2a3052; --txt:#eef0fa; --dim:#9aa0c3; --faint:#6b7099;
+    --acc:#7c5cff; --acc2:#38e0c8; --good:#3ddc84; --bad:#ff5470; --gold:#ffc94d;
+    --r:18px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:radial-gradient(1200px 600px at 80% -10%, #1d2250 0%, transparent 60%),
+               radial-gradient(900px 500px at -10% 110%, #142c44 0%, transparent 55%), var(--bg);
+    color:var(--txt);
+    font-family:"Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+    min-height:100vh; display:flex; justify-content:center;
+  }
+  #app{width:100%; max-width:430px; min-height:100vh; padding:max(14px, env(safe-area-inset-top)) 16px 28px;
+       display:flex; flex-direction:column; position:relative}
+  .screen{display:none; flex-direction:column; flex:1}
+  .screen.active{display:flex; animation:fade .25s ease}
+  @keyframes fade{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
+
+  h1,h2,h3{margin:0; font-weight:800; letter-spacing:-.02em}
+  .sm{font-size:12px; color:var(--dim)}
+  .xs{font-size:11px; color:var(--faint)}
+
+  .topbar{display:flex; align-items:center; justify-content:space-between; padding:10px 0 16px}
+  .logo{display:flex; align-items:center; gap:10px}
+  .logo .mark{width:34px;height:34px;border-radius:12px;background:linear-gradient(135deg,var(--acc),var(--acc2));
+    display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:#0b0d17}
+  .logo .t{font-size:17px;font-weight:900}
+  .logo .s{font-size:10px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase}
+  .lvlchip{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:6px 10px;cursor:pointer}
+  .lvlchip .num{font-weight:900;font-size:14px;color:var(--acc2)}
+  .xpbar{width:64px;height:6px;background:#0d1020;border-radius:99px;overflow:hidden}
+  .xpbar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:99px;transition:width .5s}
+
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;
+    font-family:inherit;font-weight:800;border-radius:14px;padding:14px 18px;font-size:15px;color:#fff;
+    background:var(--card2);border:1px solid var(--line);transition:transform .08s, filter .15s}
+  .btn:active{transform:scale(.97)}
+  .btn.primary{background:linear-gradient(135deg,var(--acc),#5b3df0);border-color:transparent;box-shadow:0 8px 24px -8px rgba(124,92,255,.7)}
+  .btn.ghost{background:transparent}
+  .btn.good{background:linear-gradient(135deg,#2fbf6d,#1f8f52);border-color:transparent}
+  .btn.bad{background:linear-gradient(135deg,#e0455f,#a92c47);border-color:transparent;--line:transparent}
+  .btn.good{--line:transparent}
+  .btn:disabled{opacity:.45;cursor:default}
+
+  .hero{text-align:center;padding:6px 0 18px}
+  .hero h1{font-size:30px;line-height:1.1}
+  .hero h1 .ai{background:linear-gradient(90deg,var(--acc2),var(--acc));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p{color:var(--dim);font-size:13px;margin:10px 24px 0}
+  .modestack{display:flex;flex-direction:column;gap:12px;margin-top:6px}
+  .mode{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);
+    border-radius:var(--r);padding:16px;cursor:pointer;transition:transform .08s,border-color .15s;text-align:left}
+  .mode:active{transform:scale(.98)}
+  .mode:hover{border-color:#3b437a}
+  .mode .ico{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;
+    font-size:21px;flex-shrink:0}
+  .mode .m1{background:linear-gradient(135deg,#7c5cff33,#38e0c833);border:1px solid #38e0c855}
+  .mode .m2{background:#ff547022;border:1px solid #ff547055}
+  .mode .m3{background:#ffc94d1c;border:1px solid #ffc94d44}
+  .mode .m4{background:#7c5cff1c;border:1px solid #7c5cff55}
+  .mode .tt{font-weight:800;font-size:15px}
+  .mode .dd{font-size:12px;color:var(--dim);margin-top:2px}
+  .mode .chev{margin-left:auto;color:var(--faint)}
+  .badge-done{margin-left:auto;font-size:10px;font-weight:800;color:var(--good);background:#3ddc8416;
+    border:1px solid #3ddc8444;border-radius:99px;padding:4px 8px;flex-shrink:0}
+
+  .sectiontitle{display:flex;align-items:center;justify-content:space-between;margin:22px 2px 10px}
+  .sectiontitle h3{font-size:14px;text-transform:uppercase;letter-spacing:.12em;color:var(--dim)}
+  .catrow{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+  .cat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 4px;text-align:center;
+    cursor:pointer;transition:transform .08s}
+  .cat:active{transform:scale(.95)}
+  .cat .ci{font-size:20px}
+  .cat .cn{font-size:10px;color:var(--dim);margin-top:4px;line-height:1.2}
+  .statrow{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:16px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}
+  .stat .v{font-size:19px;font-weight:900}
+  .stat .k{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin-top:3px}
+
+  .profilehead{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#1d2250,#141832);
+    border:1px solid var(--line);border-radius:var(--r);padding:18px}
+  .avatar{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--acc2));
+    display:flex;align-items:center;justify-content:center;font-size:24px}
+  .leveltitle{font-size:16px;font-weight:900}
+  .xpbig{height:8px;background:#0d1020;border-radius:99px;overflow:hidden;margin-top:10px}
+  .xpbig i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2))}
+  .badges{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+  .bdg{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 6px;text-align:center}
+  .bdg.off{opacity:.32;filter:grayscale(1)}
+  .bdg .bi{font-size:22px}
+  .bdg .bn{font-size:10px;color:var(--dim);margin-top:5px;line-height:1.25}
+
+  .gamehead{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .gamenum{font-weight:800;font-size:14px;color:var(--dim)}
+  .gamenum b{color:var(--txt)}
+  .scorechip{font-weight:900;background:var(--card);border:1px solid var(--line);border-radius:99px;padding:6px 13px;font-size:14px}
+  .scorechip .plus{color:var(--good)}
+  .progress{height:6px;background:#0d1020;border-radius:99px;overflow:hidden;margin-bottom:4px}
+  .progress i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));transition:width .3s}
+  .qmeta{display:flex;justify-content:space-between;align-items:center;margin:8px 2px 2px}
+  .qmeta .cat-tag{font-size:11px;font-weight:700;color:var(--acc2);background:#38e0c814;border:1px solid #38e0c844;
+    border-radius:99px;padding:4px 10px}
+  .timerwrap{display:flex;align-items:center;gap:7px;color:var(--dim);font-size:13px;font-weight:700}
+  .timerwrap.low{color:var(--bad)}
+  .timeattack-bar{height:5px;background:#0d1020;border-radius:99px;overflow:hidden;margin-bottom:8px}
+  .timeattack-bar i{display:block;height:100%;background:var(--gold);transition:width .95s linear}
+  .timeattack-bar i.low{background:var(--bad)}
+
+  .contentbox{background:var(--card);border:1px solid var(--line);border-radius:var(--r);margin-top:12px;overflow:hidden}
+  .contentbox .media{width:100%;display:flex;align-items:center;justify-content:center;background:#0e1122}
+  .contentbox .media svg{width:100%;height:auto;display:block}
+  .contentbox .textbody{padding:20px 18px;font-size:14.5px;line-height:1.62;color:#dfe2f2;white-space:pre-wrap;
+    max-height:44vh;overflow-y:auto}
+  .audiobox{padding:26px 18px;text-align:center;background:radial-gradient(400px 140px at 50% 0%, #2a2350 0%, transparent 80%), #0e1122}
+  .playbtn{width:84px;height:84px;border-radius:50%;border:none;cursor:pointer;font-size:30px;color:#0b0d17;
+    background:linear-gradient(135deg,var(--acc2),#19b89f);box-shadow:0 10px 30px -8px rgba(56,224,200,.6);
+    display:inline-flex;align-items:center;justify-content:center}
+  .playbtn:active{transform:scale(.94)}
+  .playbtn.playing{animation:pulse 1s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(56,224,200,.5)} 50%{box-shadow:0 0 0 16px rgba(56,224,200,0)}}
+  .replayhint{margin-top:12px;font-size:12px;color:var(--dim)}
+  .contentbox .imgcap{padding:9px 14px;font-size:11.5px;color:var(--dim);border-top:1px solid var(--line)}
+
+  .question{font-weight:800;font-size:18px;margin:16px 2px 14px;line-height:1.35}
+  .answerrow{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:2px}
+  .ansbtn{padding:18px 10px;font-size:16px;border-radius:var(--r)}
+  .ansbtn .sub{display:block;font-size:11px;font-weight:600;opacity:.75;margin-top:3px}
+  .feedback{border-radius:var(--r);margin-top:12px;padding:16px;display:none;animation:fade .25s}
+  .feedback.show{display:block}
+  .feedback.ok{background:#3ddc8414;border:1px solid #3ddc8450}
+  .feedback.no{background:#ff547012;border:1px solid #ff547050}
+  .fbhead{display:flex;align-items:center;gap:9px;font-weight:900;font-size:15px}
+  .feedback.ok .fbhead{color:var(--good)}
+  .feedback.no .fbhead{color:var(--bad)}
+  .fbpts{margin-left:auto;font-weight:900;font-size:15px}
+  .fbexp{font-size:13px;line-height:1.55;color:#c9cde6;margin-top:9px}
+  .nextwrap{margin-top:12px}
+
+  .tabs{display:flex;gap:7px;margin-bottom:14px}
+  .tab{flex:1;text-align:center;padding:9px 4px;border-radius:12px;background:var(--card);
+    border:1px solid var(--line);font-size:12px;font-weight:700;color:var(--dim);cursor:pointer}
+  .tab.on{background:#7c5cff22;border-color:#7c5cff66;color:var(--txt)}
+  .lbrow{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:12px 14px;margin-bottom:8px}
+  .lbrow.me{border-color:#38e0c877;background:linear-gradient(135deg,#12302e,#141832)}
+  .lbrow .rk{width:26px;text-align:center;font-weight:900;color:var(--faint)}
+  .lbrow .rk.medal{font-size:17px}
+  .lbrow .nm{font-weight:700;font-size:14px}
+  .lbrow .sc{margin-left:auto;font-weight:900;font-size:15px;color:var(--acc2)}
+
+  .resultcard{background:linear-gradient(160deg,#1d2250 0%,#141832 70%);border:1px solid #3b437a;
+    border-radius:22px;padding:28px 22px;text-align:center}
+  .rnk-emoji{font-size:52px}
+  .rnk-title{font-size:24px;font-weight:900;margin-top:8px;background:linear-gradient(90deg,var(--gold),var(--acc2));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .rnk-sub{color:var(--dim);font-size:13px;margin-top:6px}
+  .rgscore{font-size:44px;font-weight:900;margin:16px 0 2px}
+  .rgstats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:18px}
+  .breakdown{margin-top:14px;font-size:12px;color:var(--dim);line-height:1.9;text-align:left;
+    background:#0d1020;border-radius:12px;padding:12px 14px}
+  .sharewrap{margin-top:14px}
+  #sharecanvas{display:none}
+
+  .footer{margin-top:auto;padding-top:22px;text-align:center}
+  .navbar{display:flex;background:var(--card);border:1px solid var(--line);border-radius:16px;margin-top:14px}
+  .navb{flex:1;text-align:center;padding:11px 4px;font-size:10px;color:var(--dim);cursor:pointer;border-radius:12px}
+  .navb .ni{font-size:17px;display:block;margin-bottom:2px}
+  .navb.on{color:var(--txt);background:#7c5cff1e}
+
+  .modal-bg{position:fixed;inset:0;background:rgba(5,6,12,.82);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
+  .modal-bg.show{display:flex}
+  .modal{background:var(--card2);border:1px solid var(--line);border-radius:20px;padding:22px;max-width:360px;width:100%;animation:fade .2s}
+  .modal h3{font-size:17px;margin-bottom:8px}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#232849;border:1px solid #3b437a;
+    color:var(--txt);padding:10px 18px;border-radius:99px;font-size:13px;font-weight:700;z-index:99;
+    animation:fade .2s; box-shadow:0 10px 30px rgba(0,0,0,.5)}
+  input[type=text]{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);
+    background:#0e1122;color:var(--txt);font-size:14px;font-family:inherit;margin-top:6px}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <section id="sc-home" class="screen active">
+    <div class="topbar">
+      <div class="logo">
+        <div class="mark">?</div>
+        <div><div class="t">Human or AI?</div><div class="s">Can you tell the difference?</div></div>
+      </div>
+      <div class="lvlchip" onclick="showProfile()">
+        <span class="num" id="h-lvl">Lv 1</span>
+        <div class="xpbar"><i id="h-xp" style="width:0%"></i></div>
+      </div>
+    </div>
+
+    <div class="hero">
+      <h1>Human <span class="ai">or AI?</span></h1>
+      <p>Photos, texts, voices and music — some made by people, some by machines. Trust your eyes, ears and gut.</p>
+    </div>
+
+    <div class="modestack">
+      <div class="mode" onclick="startDaily()">
+        <div class="ico m1">📅</div>
+        <div><div class="tt">Daily Challenge</div><div class="dd">Same 10 questions for everyone today</div></div>
+        <span id="daily-done" class="badge-done" style="display:none">DONE ✓</span>
+        <span class="chev">›</span>
+      </div>
+      <div class="mode" onclick="startTimeAttack()">
+        <div class="ico m2">⚡</div>
+        <div><div class="tt">Time Attack</div><div class="dd">60 seconds. How many can you spot?</div></div>
+        <span class="chev">›</span>
+      </div>
+      <div class="mode" onclick="show('sc-classic')">
+        <div class="ico m3">🎯</div>
+        <div><div class="tt">Specialist Challenge</div><div class="dd">Train a single category</div></div>
+        <span class="chev">›</span>
+      </div>
+      <div class="mode" onclick="showChallengeFriend()">
+        <div class="ico m4">🤝</div>
+        <div><div class="tt">Challenge a Friend</div><div class="dd">Share a link — same 10 questions</div></div>
+      </div>
+    </div>
+
+    <div class="sectiontitle"><h3>Categories</h3></div>
+    <div class="catrow">
+      <div class="cat" onclick="startGame({mode:'practice',category:'image'})"><div class="ci">🖼️</div><div class="cn">Images</div></div>
+      <div class="cat" onclick="startGame({mode:'practice',category:'text'})"><div class="ci">📝</div><div class="cn">Texts</div></div>
+      <div class="cat" onclick="startGame({mode:'practice',category:'voice'})"><div class="ci">🎙️</div><div class="cn">Voices</div></div>
+      <div class="cat" onclick="startGame({mode:'practice',category:'music'})"><div class="ci">🎵</div><div class="cn">Music</div></div>
+    </div>
+
+    <div class="sectiontitle">
+      <h3>Your stats</h3>
+      <a class="xs" style="color:var(--acc2);cursor:pointer;text-decoration:none" onclick="show('sc-lb')">Leaderboard ›</a>
+    </div>
+    <div class="statrow">
+      <div class="stat"><div class="v" id="s-acc">—</div><div class="k">Accuracy</div></div>
+      <div class="stat"><div class="v" id="s-streak">0</div><div class="k">Best streak</div></div>
+      <div class="stat"><div class="v" id="s-games">0</div><div class="k">Games</div></div>
+    </div>
+
+    <div class="footer"><div class="xs">Prototype — all samples are locally generated for demonstration.<br>Detection is not an exact science: play, observe, learn. 🔍</div></div>
+    <div class="navbar">
+      <div class="navb on"><span class="ni">🏠</span>Home</div>
+      <div class="navb" onclick="show('sc-lb')"><span class="ni">🏆</span>Ranks</div>
+      <div class="navb" onclick="showProfile()"><span class="ni">👤</span>Profile</div>
+    </div>
+  </section>
+
+  <section id="sc-classic" class="screen">
+    <div class="topbar">
+      <button class="btn ghost" onclick="show('sc-home')">‹ Back</button>
+    </div>
+    <h2 style="font-size:22px">Choose a category</h2>
+    <p class="sm" style="margin:6px 0 18px">A 10-question session. Score converts to XP.</p>
+    <div class="modestack">
+      <div class="mode" onclick="startGame({mode:'mixed'})"><div class="ico m1">🎲</div><div><div class="tt">General Expert</div><div class="dd">Mixed categories, 10 questions</div></div><span class="chev">›</span></div>
+      <div class="mode" onclick="startGame({mode:'practice',category:'image'})"><div class="ico m1">🖼️</div><div><div class="tt">Image Detective</div><div class="dd">Real sketches vs generated art</div></div><span class="chev">›</span></div>
+      <div class="mode" onclick="startGame({mode:'practice',category:'text'})"><div class="ico m3">📝</div><div><div class="tt">Text Detective</div><div class="dd">Human writing vs LLM prose</div></div><span class="chev">›</span></div>
+      <div class="mode" onclick="startGame({mode:'practice',category:'voice'})"><div class="ico m2">🎙️</div><div><div class="tt">Voice Hunter</div><div class="dd">Real speech vs synthetic voice</div></div><span class="chev">›</span></div>
+      <div class="mode" onclick="startGame({mode:'practice',category:'music'})"><div class="ico m4">🎵</div><div><div class="tt">Music Detective</div><div class="dd">Human composition vs generated track</div></div><span class="chev">›</span></div>
+    </div>
+    <div class="footer"></div>
+  </section>
+
+  <section id="sc-game" class="screen">
+    <div class="timeattack-bar" id="ta-bar" style="display:none"><i id="ta-fill" style="width:100%"></i></div>
+    <div class="gamehead">
+      <div class="gamenum" id="g-num">Question <b id="gn">01</b> / 10</div>
+      <div class="scorechip" id="g-score">🏆 0</div>
+    </div>
+    <div class="progress"><i id="g-prog" style="width:0%"></i></div>
+    <div class="qmeta">
+      <span class="cat-tag" id="g-cat">Image</span>
+      <span class="timerwrap" id="g-timerwrap">⏱ <span id="g-time">20</span>s</span>
+    </div>
+
+    <div class="contentbox" id="g-content"></div>
+
+    <div class="question" id="g-question">Who created this?</div>
+
+    <div class="answerrow" id="g-answers">
+      <button class="btn good ansbtn" id="btn-human" onclick="answer('human')">👤 Human<span class="sub">Made by a person</span></button>
+      <button class="btn bad ansbtn" id="btn-ai" onclick="answer('ai')">🤖 AI<span class="sub">Machine-generated</span></button>
+    </div>
+
+    <div class="feedback" id="g-fb">
+      <div class="fbhead" id="fb-head"></div>
+      <div class="fbexp" id="fb-exp"></div>
+      <div class="nextwrap"><button class="btn primary" id="btn-next" onclick="nextQuestion()">Next ›</button></div>
+    </div>
+    <div class="footer"></div>
+  </section>
+
+  <section id="sc-lb" class="screen">
+    <div class="topbar">
+      <button class="btn ghost" onclick="show('sc-home')">‹ Back</button>
+      <h2 style="font-size:19px">🏆 Leaderboard</h2><span></span>
+    </div>
+    <div class="tabs" id="lb-tabs">
+      <div class="tab on" data-p="daily" onclick="renderLB('daily')">Daily</div>
+      <div class="tab" data-p="weekly" onclick="renderLB('weekly')">Weekly</div>
+      <div class="tab" data-p="alltime" onclick="renderLB('alltime')">All-time</div>
+    </div>
+    <div id="lb-list"></div>
+    <div class="footer"><div class="xs">Opponents in this prototype are simulated per time period.</div></div>
+  </section>
+
+  <section id="sc-profile" class="screen">
+    <div class="topbar">
+      <button class="btn ghost" onclick="show('sc-home')">‹ Back</button>
+      <h2 style="font-size:19px">👤 Profile</h2><span></span>
+    </div>
+    <div class="profilehead">
+      <div class="avatar">🕵️</div>
+      <div style="flex:1">
+        <div class="leveltitle" id="p-lvl">Level 1 · Rookie</div>
+        <div class="sm" id="p-xptxt">0 / 150 XP</div>
+        <div class="xpbig"><i id="p-xp" style="width:0%"></i></div>
+      </div>
+    </div>
+    <div class="statrow" style="grid-template-columns:repeat(2,1fr)">
+      <div class="stat"><div class="v" id="p-correct">0</div><div class="k">Correct answers</div></div>
+      <div class="stat"><div class="v" id="p-acc">—</div><div class="k">Accuracy</div></div>
+      <div class="stat"><div class="v" id="p-streak">0</div><div class="k">Longest streak</div></div>
+      <div class="stat"><div class="v" id="p-dailies">0</div><div class="k">Daily challenges</div></div>
+    </div>
+    <div class="sectiontitle"><h3>Achievements</h3></div>
+    <div class="badges" id="p-badges"></div>
+    <div class="sectiontitle"><h3>Settings</h3></div>
+    <button class="btn" style="color:var(--bad)" onclick="resetAll()">🗑 Reset all progress</button>
+    <div class="footer"></div>
+  </section>
+
+  <section id="sc-results" class="screen">
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center">
+      <div class="resultcard">
+        <div class="rnk-emoji" id="r-emoji">🏅</div>
+        <div class="rnk-title" id="r-title">AI DETECTIVE</div>
+        <div class="rnk-sub" id="r-sub"></div>
+        <div class="rgscore" id="r-score">80</div>
+        <div class="sm">points earned this round</div>
+        <div class="rgstats">
+          <div class="stat"><div class="v" id="r-acc">80%</div><div class="k">Accuracy</div></div>
+          <div class="stat"><div class="v" id="r-xp">+80</div><div class="k">XP gained</div></div>
+          <div class="stat"><div class="v" id="r-best">🔥 5</div><div class="k">Best streak</div></div>
+        </div>
+        <div class="breakdown" id="r-break"></div>
+      </div>
+      <div class="sharewrap">
+        <button class="btn primary" style="width:100%" onclick="shareResults()">📤 Share scorecard</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+          <button class="btn" onclick="replay()">↻ Play again</button>
+          <button class="btn" onclick="show('sc-home')">🏠 Home</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast" style="display:none"></div>
+<div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h3 id="m-title">Challenge a friend</h3>
+    <p class="sm" id="m-body"></p>
+    <input type="text" id="m-input" readonly onclick="this.select()">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
+      <button class="btn primary" onclick="copyChallenge()">📋 Copy</button>
+      <button class="btn" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+<canvas id="sharecanvas" width="800" height="1000"></canvas>
+
+<script src="game.js"></script>
+</body>
+</html>
